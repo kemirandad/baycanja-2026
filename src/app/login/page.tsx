@@ -46,7 +46,7 @@ export default function LoginPage() {
 
       setError('');
       setCurrentUser({ id: credential.user.uid, username: claimedUsername, role: role as 'ADMIN' | 'CANTO' | 'BAILE' });
-      router.push('/');
+      router.push('/judging');
     } catch {
       setError('Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.');
     }

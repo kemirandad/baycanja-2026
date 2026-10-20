@@ -23,7 +23,7 @@ export function Header() {
   };
 
   const navItems = [
-    { href: '/', label: 'Participantes', icon: Users },
+    { href: '/judging', label: 'Participantes', icon: Users },
     { href: '/leaderboard', label: 'Resultados', icon: ListOrdered },
   ];
   
@@ -35,7 +35,7 @@ export function Header() {
     );
   }
 
-  if (pathname === '/login') {
+  if (pathname === '/' || pathname === '/login') {
     return null;
   }
   
