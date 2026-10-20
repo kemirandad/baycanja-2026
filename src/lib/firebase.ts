@@ -1,16 +1,23 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: "baycanja-ranks",
-  appId: "1:579070689958:web:4ad9d2e5c417fdfbb26a67",
-  apiKey: "AIzaSyAYiehaz9zL6dIVl2ZFSoV0QUGSzyflxyg",
-  authDomain: "baycanja-ranks.firebaseapp.com",
-  messagingSenderId: "579070689958",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+export const isFirebaseConfigured = Object.values(firebaseConfig).every(Boolean);
 
-export { db };
+const app = isFirebaseConfigured
+  ? (getApps().length ? getApp() : initializeApp(firebaseConfig))
+  : null;
+
+export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;
+
+export const authEmailForUsername = (username: string) =>
+  `${username.trim().toLowerCase()}@baycanja-2026.test`;

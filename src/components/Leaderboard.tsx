@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useScoresStore } from '@/store/scores-store';
-import { participants, cantoCriteria, baileCriteria, users } from '@/lib/data';
+import { participants, cantoCriteria, baileCriteria } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -50,6 +50,7 @@ interface ScoreData {
 interface FirestoreScoreDoc {
   participantId: string;
   judgeId: string;
+  judgeUsername?: string;
   [key: string]: any; // scores
 }
 
@@ -180,8 +181,8 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
     const averagedParticipants = participants.map((participant) => {
       const participantScoreDocs = scoresByParticipant[participant.id] || [];
       const judgeScores = participantScoreDocs.map(s => {
-        const judgeUsername = users.find(u => u.id === s.judgeId)?.username || 'Desconocido';
-        const { judgeId, participantId, ...scores } = s;
+        const judgeUsername = s.judgeUsername || 'Jurado';
+        const { judgeId, participantId, judgeUsername: _judgeUsername, ...scores } = s;
         return {
           judgeUsername,
           score: calculateTotalScore(scores, participant.eventType),
@@ -215,6 +216,7 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
   }, [allScores]);
 
   const resetScoresForEvent = async (eventType: 'Canto' | 'Baile') => {
+    if (!db) return;
     const participantIdsToReset = participants
       .filter(p => p.eventType === eventType)
       .map(p => p.id);

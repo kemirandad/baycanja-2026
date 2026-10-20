@@ -43,18 +43,20 @@ const generateFormSchema = (participant: Participant) => {
 
 type JudgingFormValues = z.infer<ReturnType<typeof generateFormSchema>>;
 
-const saveScoresToFirestore = async (judgeId: string, participantId: string, scores: JudgingFormValues) => {
+const saveScoresToFirestore = async (judgeId: string, judgeUsername: string, participantId: string, scores: JudgingFormValues) => {
+  if (!db) throw new Error('Firebase no está configurado.');
   const docRef = doc(db, 'scores', `${judgeId}:${participantId}`);
   const dataToSave = {
     ...scores,
     judgeId,
+    judgeUsername,
     participantId,
   };
   await setDoc(docRef, dataToSave);
 };
 
 const getScoresFromFirestore = async (judgeId: string, participantId: string) => {
-  if (!judgeId || !participantId) return null;
+  if (!db || !judgeId || !participantId) return null;
   const docRef = doc(db, 'scores', `${judgeId}:${participantId}`);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
@@ -104,15 +106,22 @@ export default function JudgingPanel({
   async function onSubmit(data: JudgingFormValues) {
     if (!judgeId || !canJudge) return;
 
-    await saveScoresToFirestore(judgeId, participant.id, data);
-
-    toast({
-      title: 'Calificación Guardada',
-      description: `La calificación de ${currentUser.username} para ${participant.name} ha sido guardada en la base de datos.`,
-      action: <CheckCircle className="text-green-500" />,
-    });
-    
-    router.push('/');
+    try {
+      await saveScoresToFirestore(judgeId, currentUser.username, participant.id, data);
+      toast({
+        title: 'Calificación Guardada',
+        description: `La calificación de ${currentUser.username} para ${participant.name} ha sido guardada en la base de datos.`,
+        action: <CheckCircle className="text-green-500" />,
+      });
+      router.push('/');
+    } catch (error) {
+      console.error('No se pudo guardar la calificación:', error);
+      toast({
+        title: 'No se pudo guardar',
+        description: 'Comprueba tu conexión o los permisos de Firestore y vuelve a intentarlo.',
+        variant: 'destructive',
+      });
+    }
   }
   
   if (!_hasHydrated || !currentUser) {

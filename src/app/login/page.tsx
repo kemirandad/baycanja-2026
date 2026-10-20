@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useScoresStore } from '@/store/scores-store';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, authEmailForUsername, db, isFirebaseConfigured } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,7 +18,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { LogIn, Tv } from 'lucide-react';
-import { users } from '@/lib/data';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -25,18 +27,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    const user = users.find(u => u.username === username && u.password === password);
-
-    if (!user) {
-      setError('Credenciales incorrectas. Por favor, inténtelo de nuevo.');
+  const handleLogin = async () => {
+    if (!auth || !db || !isFirebaseConfigured) {
+      setError('Firebase Authentication aún no está configurado para BAYCANJA 2026.');
       return;
     }
 
-    setError('');
-    const { password: _, ...userToStore } = user;
-    setCurrentUser(userToStore);
-    router.push('/');
+    try {
+      const credential = await signInWithEmailAndPassword(auth, authEmailForUsername(username), password);
+      const profile = await getDoc(doc(db, 'userRoles', credential.user.uid));
+      const role = profile.data()?.role;
+      const claimedUsername = profile.data()?.username;
+      if (!profile.exists() || typeof role !== 'string' || !['ADMIN', 'CANTO', 'BAILE'].includes(role) || typeof claimedUsername !== 'string') {
+        await signOut(auth);
+        setError('La cuenta no tiene un rol autorizado. Contacta al administrador.');
+        return;
+      }
+
+      setError('');
+      setCurrentUser({ id: credential.user.uid, username: claimedUsername, role: role as 'ADMIN' | 'CANTO' | 'BAILE' });
+      router.push('/');
+    } catch {
+      setError('Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.');
+    }
   };
 
   return (
@@ -73,7 +86,7 @@ export default function LoginPage() {
           {error && <p className="text-sm font-medium text-destructive pt-1">{error}</p>}
         </CardContent>
         <CardFooter>
-          <Button onClick={handleLogin} className="w-full text-lg py-6">
+          <Button onClick={handleLogin} disabled={!isFirebaseConfigured} className="w-full text-lg py-6">
             <LogIn className="mr-2 h-5 w-5"/>
             Iniciar Sesión
           </Button>

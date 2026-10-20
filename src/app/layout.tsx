@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/Header';
+import { AuthProvider } from '@/components/AuthProvider';
 import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
@@ -28,12 +29,14 @@ export default function RootLayout({
         <link rel="icon" href={faviconDataUri} />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col')}>
-        <div className="fixed top-0 left-0 right-0 h-48 bg-gradient-to-b from-primary/10 to-transparent -z-10"></div>
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <Toaster />
-        <SpeedInsights/>
+        <AuthProvider>
+          <div className="fixed top-0 left-0 right-0 h-48 bg-gradient-to-b from-primary/10 to-transparent -z-10"></div>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <Toaster />
+          <SpeedInsights/>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -8,13 +8,16 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useScoresStore } from '@/store/scores-store';
 import { Logo } from '@/components/Logo';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, setCurrentUser, _hasHydrated } = useScoresStore();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (auth) await signOut(auth);
     setCurrentUser(null);
     router.push('/login');
   };

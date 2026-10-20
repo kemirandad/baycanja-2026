@@ -1,32 +1,16 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '@/lib/types';
 
-type StoredUser = Omit<User, 'password'>;
-
 type ScoresState = {
-  currentUser: StoredUser | null;
-  setCurrentUser: (user: StoredUser | null) => void;
+  currentUser: User | null;
+  setCurrentUser: (user: User | null) => void;
   _hasHydrated: boolean;
   setHasHydrated: (hydrated: boolean) => void;
 };
 
-export const useScoresStore = create<ScoresState>()(
-  persist(
-    (set) => ({
-      currentUser: null,
-      setCurrentUser: (user) => set({ currentUser: user }),
-      _hasHydrated: false,
-      setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
-    }),
-    {
-      name: 'baycanja-user-storage',
-      storage: createJSONStorage(() => localStorage),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.setHasHydrated(true);
-        }
-      },
-    }
-  )
-);
+export const useScoresStore = create<ScoresState>((set) => ({
+  currentUser: null,
+  setCurrentUser: (user) => set({ currentUser: user }),
+  _hasHydrated: false,
+  setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
+}));

@@ -1,18 +1,5 @@
 
-import type { Participant, Criterion, User } from './types';
-
-export const users: User[] = [
-  // Admin
-  { id: 'admin', username: 'admin', password: 'password', role: 'ADMIN' },
-  // Jueces de Canto
-  { id: 'juez_canto_1', username: 'juez.canto1', password: 'password', role: 'CANTO' },
-  { id: 'juez_canto_2', username: 'juez.canto2', password: 'password', role: 'CANTO' },
-  { id: 'juez_canto_3', username: 'juez.canto3', password: 'password', role: 'CANTO' },
-  // Jueces de Baile
-  { id: 'juez_baile_1', username: 'juez.baile1', password: 'password', role: 'BAILE' },
-  { id: 'juez_baile_2', username: 'juez.baile2', password: 'password', role: 'BAILE' },
-  { id: 'juez_baile_3', username: 'juez.baile3', password: 'password', role: 'BAILE' },
-];
+import type { Participant, Criterion } from './types';
 
 
 const placeholderDescription =

@@ -26,15 +26,21 @@ const useHasScores = (judgeId: string | undefined, participantId: string) => {
   const [hasScore, setHasScore] = useState(false);
 
   useEffect(() => {
-    if (!judgeId) {
+    if (!db || !judgeId) {
       setHasScore(false);
       return;
     }
+    const firestore = db;
     const checkScore = async () => {
       if (!judgeId || !participantId) return;
-      const docRef = doc(db, 'scores', `${judgeId}:${participantId}`);
-      const docSnap = await getDoc(docRef);
-      setHasScore(docSnap.exists());
+      const docRef = doc(firestore, 'scores', `${judgeId}:${participantId}`);
+      try {
+        const docSnap = await getDoc(docRef);
+        setHasScore(docSnap.exists());
+      } catch (error) {
+        console.warn('No se pudo comprobar si el jurado ya calificó:', error);
+        setHasScore(false);
+      }
     };
     checkScore();
   }, [judgeId, participantId]);

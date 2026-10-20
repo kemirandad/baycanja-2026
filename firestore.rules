@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return signedIn() && userRole() == 'ADMIN';
+    }
+
+    function isOwnScore(data) {
+      return signedIn()
+        && data.judgeId == request.auth.uid
+        && data.judgeUsername == get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.username;
+    }
+
+    function canScoreCanto(data) {
+      return userRole() == 'ADMIN'
+        || (userRole() == 'CANTO' && [
+          '2026-01', '2026-02', '2026-03', '2026-04', '2026-05',
+          '2026-06', '2026-07', '2026-08', '2026-09', '2026-10',
+          '2026-11', '2026-12', '2026-13', '2026-14', '2026-15',
+          '2026-16', '2026-17', '2026-18', '2026-19', '2026-20',
+          '2026-21', '2026-22', '2026-23', '2026-24', '2026-25'
+        ].hasAny([data.participantId]));
+    }
+
+    function canScoreBaile(data) {
+      return userRole() == 'ADMIN'
+        || (userRole() == 'BAILE' && [
+          '2026-26', '2026-27', '2026-28', '2026-29', '2026-30',
+          '2026-31', '2026-32', '2026-33', '2026-34', '2026-35', '2026-36'
+        ].hasAny([data.participantId]));
+    }
+
+    function validCantoScore(data) {
+      return data.keys().hasOnly([
+          'judgeId', 'judgeUsername', 'participantId',
+          'expression', 'tuning', 'diction', 'stage_presence', 'originality'
+        ])
+        && data.keys().hasAll([
+          'judgeId', 'judgeUsername', 'participantId',
+          'expression', 'tuning', 'diction', 'stage_presence', 'originality'
+        ])
+        && data.expression is number && data.expression >= 0 && data.expression <= 10
+        && data.tuning is number && data.tuning >= 0 && data.tuning <= 10
+        && data.diction is number && data.diction >= 0 && data.diction <= 10
+        && data.stage_presence is number && data.stage_presence >= 0 && data.stage_presence <= 10
+        && data.originality is number && data.originality >= 0 && data.originality <= 10;
+    }
+
+    function validBaileScore(data) {
+      return data.keys().hasOnly([
+          'judgeId', 'judgeUsername', 'participantId',
+          'technique', 'rhythm', 'coordination', 'body_expression', 'costume', 'creativity', 'difficulty'
+        ])
+        && data.keys().hasAll([
+          'judgeId', 'judgeUsername', 'participantId',
+          'technique', 'rhythm', 'coordination', 'body_expression', 'costume', 'creativity', 'difficulty'
+        ])
+        && data.technique is number && data.technique >= 0 && data.technique <= 10
+        && data.rhythm is number && data.rhythm >= 0 && data.rhythm <= 10
+        && data.coordination is number && data.coordination >= 0 && data.coordination <= 10
+        && data.body_expression is number && data.body_expression >= 0 && data.body_expression <= 10
+        && data.costume is number && data.costume >= 0 && data.costume <= 10
+        && data.creativity is number && data.creativity >= 0 && data.creativity <= 10
+        && data.difficulty is number && data.difficulty >= 0 && data.difficulty <= 10;
+    }
+
+    match /scores/{scoreId} {
+      // Public leaderboard requires read access; writes still require a role claim.
+      allow get, list: if true;
+      allow create, update: if scoreId == request.resource.data.judgeId + ':' + request.resource.data.participantId
+        && isOwnScore(request.resource.data)
+        && ((validCantoScore(request.resource.data) && canScoreCanto(request.resource.data))
+          || (validBaileScore(request.resource.data) && canScoreBaile(request.resource.data)));
+      allow delete: if isAdmin();
+    }
+
+    match /userRoles/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
