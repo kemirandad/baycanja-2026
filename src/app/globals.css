@@ -4,31 +4,31 @@
 
 @layer base {
   :root {
-    --background: 228 67% 97%;
-    --foreground: 222 84% 5%;
+    --background: 220 24% 97%;
+    --foreground: 222 28% 12%;
     --card: 0 0% 100%;
     --card-foreground: 222 84% 5%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 84% 5%;
-    --primary: 231 48% 48%;
+    --primary: 222 72% 48%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 228 20% 90%;
-    --secondary-foreground: 222 84% 5%;
-    --muted: 228 20% 90%;
-    --muted-foreground: 225 9% 41%;
-    --accent: 34 100% 63%;
-    --accent-foreground: 26 83% 12%;
+    --secondary: 220 19% 94%;
+    --secondary-foreground: 222 28% 16%;
+    --muted: 220 18% 94%;
+    --muted-foreground: 220 9% 43%;
+    --accent: 30 100% 91%;
+    --accent-foreground: 25 62% 25%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 228 20% 85%;
-    --input: 228 20% 85%;
-    --ring: 231 48% 48%;
+    --border: 220 16% 87%;
+    --input: 220 16% 84%;
+    --ring: 222 72% 48%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 1rem;
   }
  
   .dark {
@@ -65,5 +65,31 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    font-feature-settings: "ss01" on;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-image: radial-gradient(ellipse at 50% -20%, rgba(74, 111, 210, 0.10), transparent 45%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+  }
+
+  :focus-visible {
+    outline-color: hsl(var(--ring));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

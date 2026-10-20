@@ -5,7 +5,7 @@ import { Logo } from '@/components/Logo';
 
 export function Footer() {
   const pathname = usePathname();
-  if (pathname === '/login' || pathname === '/public-results') {
+  if (pathname === '/' || pathname === '/login' || pathname === '/public-results') {
     return null;
   }
   return (

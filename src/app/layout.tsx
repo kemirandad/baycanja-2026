@@ -5,11 +5,10 @@ import { AuthProvider } from '@/components/AuthProvider';
 import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const metadata: Metadata = {
-  title: 'BAYCANJA',
-  description: 'Plataforma de calificación para el evento BAYCANJA.',
+  title: 'BAYCANJA 2026 · Festival de talentos',
+  description: 'Celebra, acompaña y descubre el talento en BAYCANJA 2026.',
 };
 
 export default function RootLayout({
@@ -23,19 +22,14 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
         <link rel="icon" href={faviconDataUri} />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col')}>
         <AuthProvider>
-          <div className="fixed top-0 left-0 right-0 h-48 bg-gradient-to-b from-primary/10 to-transparent -z-10"></div>
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
           <Toaster />
-          <SpeedInsights/>
         </AuthProvider>
       </body>
     </html>

@@ -16,16 +16,7 @@ import {
 import { Trophy, Medal, Award, Mic, Clapperboard, RotateCcw, ChevronDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/navigation';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  CartesianGrid,
-} from 'recharts';
+import dynamic from 'next/dynamic';
 import { Button } from './ui/button';
 import React from 'react';
 import type { Participant } from '@/lib/types';
@@ -42,6 +33,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { collection, onSnapshot, query, writeBatch, getDocs, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
+const ScoreBreakdownChart = dynamic(() => import('./ScoreBreakdownChart'), {
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse rounded-xl bg-secondary/70" />,
+});
 
 interface ScoreData {
   [criterionId: string]: number;
@@ -78,24 +74,12 @@ const DetailsRow = ({ participant }: { participant: RankedParticipant }) => {
   return (
     <TableRow>
       <TableCell colSpan={4} className="p-0">
-        <div className="p-4 bg-muted/50">
-          <h4 className="text-lg font-semibold mb-2 text-center">
+        <div className="bg-background/70 p-5 sm:p-7">
+          <h4 className="mb-4 text-center text-base font-semibold tracking-tight">
             Desglose de Puntuaciones para {participant.name}
           </h4>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={participant.judgeScores.filter(s => s.score > 0)}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="judgeUsername" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip formatter={(value: number) => [value.toFixed(2), "Puntaje"]}/>
-                <Legend />
-                <Bar dataKey="score" name="Puntaje" fill="hsl(var(--primary))" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full rounded-2xl border border-border/60 bg-white p-4">
+            <ScoreBreakdownChart scores={participant.judgeScores} />
           </div>
         </div>
       </TableCell>
@@ -107,7 +91,7 @@ const ParticipantRow = ({ participant }: { participant: RankedParticipant }) => 
   const [isOpen, setIsOpen] = useState(false);
 
   const getPodiumIcon = (rank: number) => {
-    const props = { className: 'h-6 w-6' };
+    const props = { className: 'h-5 w-5' };
     switch (rank) {
       case 1: return <Trophy {...props} color="#FFD700" />;
       case 2: return <Medal {...props} color="#C0C0C0" />;
@@ -118,18 +102,18 @@ const ParticipantRow = ({ participant }: { participant: RankedParticipant }) => 
 
   return (
     <React.Fragment>
-      <TableRow className={participant.rank <= 3 ? 'font-bold bg-secondary/50' : ''}>
-        <TableCell className="text-center">
+      <TableRow className={participant.rank <= 3 ? 'bg-primary/[0.035]' : ''}>
+        <TableCell className="text-center font-semibold tabular-nums">
           <div className="flex justify-center items-center gap-2">
             {getPodiumIcon(participant.rank)}
           </div>
         </TableCell>
-        <TableCell className="text-lg">{participant.name}</TableCell>
-        <TableCell className="text-right text-lg text-primary font-mono">
+        <TableCell className="py-4 text-sm font-medium sm:text-base">{participant.name}</TableCell>
+        <TableCell className="text-right font-mono text-base font-semibold tabular-nums text-primary sm:text-lg">
           {participant.totalScore.toFixed(2)}
         </TableCell>
         <TableCell className="text-center">
-          <Button variant="ghost" size="sm" onClick={() => setIsOpen(!isOpen)}>
+          <Button variant="ghost" size="sm" aria-label={`Ver detalle de ${participant.name}`} aria-expanded={isOpen} onClick={() => setIsOpen(!isOpen)}>
             <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
           </Button>
         </TableCell>
@@ -142,27 +126,33 @@ const ParticipantRow = ({ participant }: { participant: RankedParticipant }) => 
 export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }) {
   const { currentUser, _hasHydrated } = useScoresStore();
   const [allScores, setAllScores] = useState<FirestoreScoreDoc[]>([]);
+  const [isLoadingScores, setIsLoadingScores] = useState(true);
   const [scoresError, setScoresError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     if (!isPublic && _hasHydrated && !currentUser) {
-      router.push('/login');
+      router.push('/');
     }
   }, [currentUser, router, isPublic, _hasHydrated]);
 
   useEffect(() => {
-    if (!db) return;
+    if (!db) {
+      setIsLoadingScores(false);
+      return;
+    }
     const q = query(collection(db, "scores"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const scoresData = querySnapshot.docs.map(doc => doc.data() as FirestoreScoreDoc);
       setAllScores(scoresData);
       setScoresError(null);
+      setIsLoadingScores(false);
     }, (error) => {
       console.warn('No se pudieron cargar las puntuaciones de Firebase:', error);
       setScoresError(error.code === 'permission-denied'
         ? 'Firebase rechazó la lectura de puntuaciones. Hay que habilitar la lectura de la colección “scores” en las reglas de Firestore.'
         : 'No se pudieron cargar las puntuaciones. Comprueba la conexión con Firebase e inténtalo de nuevo.');
+      setIsLoadingScores(false);
     });
 
     return () => unsubscribe();
@@ -250,7 +240,7 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
     if (data.length === 0) {
       return (
         <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg">No hay participantes en esta categoría.</p>
+          <p className="text-base">No hay participantes en esta categoría.</p>
         </div>
       );
     }
@@ -260,7 +250,7 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
     if (qualifiedParticipants.length === 0) {
         return (
             <div className="text-center py-12 text-muted-foreground">
-              <p className="text-lg">No hay participantes calificados en esta categoría aún.</p>
+              <p className="text-base">Aún no hay calificaciones para esta categoría.</p>
             </div>
           );
     }
@@ -323,7 +313,7 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
 
     return (
       <Tabs defaultValue="categoryA" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
+        <TabsList className="mx-auto mb-8 grid h-11 w-full max-w-md grid-cols-2 rounded-full border border-border/70 bg-white/60 p-1 shadow-sm">
           <TabsTrigger value="categoryA">Categoría A</TabsTrigger>
           <TabsTrigger value="categoryB">Categoría B</TabsTrigger>
         </TabsList>
@@ -372,18 +362,23 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
   const showTabs = isPublic || currentUser?.role === 'ADMIN';
 
   return (
-    <Card>
-      <CardContent className="pt-6">
+    <Card className="overflow-hidden rounded-2xl border-white/80 bg-white/80 shadow-[0_12px_40px_-26px_rgba(20,35,70,0.3)]">
+      <CardContent className="p-4 sm:p-7">
+       {isLoadingScores ? (
+        <div role="status" aria-label="Cargando resultados" className="space-y-3 py-3">
+          {[0, 1, 2, 3, 4].map((row) => <div key={row} className="h-14 animate-pulse rounded-xl bg-secondary/70" />)}
+        </div>
+       ) : <>
        {scoresError && (
         <div role="alert" className="mb-6 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {scoresError}
         </div>
        )}
-       {showTabs ? (
+       {!scoresError && (showTabs ? (
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-lg mx-auto mb-6">
-            {canSeeCanto && <TabsTrigger value="canto"><Mic className="mr-2"/>Canto</TabsTrigger>}
-            {canSeeBaile && <TabsTrigger value="baile"><Clapperboard className="mr-2"/>Baile</TabsTrigger>}
+          <TabsList className="mx-auto mb-7 grid h-12 w-full max-w-sm grid-cols-2 rounded-full border border-border/70 bg-secondary/70 p-1 shadow-sm">
+            {canSeeCanto && <TabsTrigger value="canto" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Mic className="mr-2 h-4 w-4"/>Canto</TabsTrigger>}
+            {canSeeBaile && <TabsTrigger value="baile" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Clapperboard className="mr-2 h-4 w-4"/>Baile</TabsTrigger>}
           </TabsList>
           {canSeeCanto && <TabsContent value="canto">
             {renderCategoryTabs('Canto')}
@@ -397,7 +392,8 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
             {canSeeCanto && renderCategoryTabs('Canto')}
             {canSeeBaile && renderCategoryTabs('Baile')}
           </>
-       )}
+       ))}
+       </>}
       </CardContent>
     </Card>
   );

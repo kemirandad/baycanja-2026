@@ -24,7 +24,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Lock } from 'lucide-react';
+import { CheckCircle, ClipboardCheck, Lock, LoaderCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -131,9 +131,9 @@ export default function JudgingPanel({
 
   if (!canJudge) {
     return (
-      <Card>
+      <Card className="rounded-2xl border-white/80 bg-white/80 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Acceso Denegado</CardTitle>
+          <CardTitle className="text-2xl tracking-tight">Acceso Denegado</CardTitle>
           <CardDescription>
             No tienes permiso para calificar a este participante.
           </CardDescription>
@@ -149,38 +149,45 @@ export default function JudgingPanel({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl">Panel de Jurado ({currentUser.username})</CardTitle>
-        <CardDescription>
+    <Card className="rounded-2xl border-white/80 bg-white/80 shadow-[0_12px_40px_-26px_rgba(20,35,70,0.3)]">
+      <CardHeader className="border-b border-border/60 px-6 py-5 sm:px-8">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <ClipboardCheck className="h-5 w-5" />
+          </div>
+          <div>
+        <CardTitle className="text-xl font-semibold tracking-[-0.03em]">Panel de evaluación</CardTitle>
+        <CardDescription className="mt-1">
           Califica la presentación en una escala de 0 a 10 para cada criterio.
         </CardDescription>
+          </div>
+        </div>
+        <p className="ml-[52px] text-xs font-medium text-muted-foreground">Jurado: {currentUser.username}</p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-6 py-6 sm:px-8 sm:py-8">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-7">
             {criteria.map((criterion) => (
               <FormField
                 key={criterion.id}
                 control={form.control}
                 name={criterion.id as keyof JudgingFormValues}
                 render={({ field }) => (
-                  <FormItem>
-                    <div className='flex justify-between items-center'>
+                  <FormItem className="space-y-3 border-b border-border/50 pb-6 last:border-0 last:pb-0">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
-                        <FormLabel className="text-lg font-semibold">
-                          {criterion.name} (Ponderación: {criterion.weight}%)
+                        <FormLabel className="text-base font-semibold tracking-[-0.02em]">
+                          {criterion.name}
                         </FormLabel>
-                        <FormDescription>{criterion.description}</FormDescription>
+                        <FormDescription className="mt-1 text-sm leading-5">{criterion.description}</FormDescription>
                       </div>
-                      <span className="font-bold text-primary text-xl">
-                        {field.value?.toFixed(1) ?? '0.0'}
-                      </span>
+                      <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold tabular-nums text-primary">{criterion.weight}%</span>
                     </div>
 
                     <FormControl>
                       <RadioGroup
-                        className="flex flex-wrap gap-2 pt-2"
+                        aria-label={`${criterion.name}, de 0 a 10`}
+                        className="flex flex-nowrap gap-1.5 overflow-x-auto pt-1 pb-1"
                         value={String(field.value)}
                         onValueChange={(value) => field.onChange(Number(value))}
                       >
@@ -192,10 +199,10 @@ export default function JudgingPanel({
                             <FormLabel htmlFor={`${field.name}-${i}`}>
                               <div
                                 className={cn(
-                                  'w-10 h-10 rounded-md flex items-center justify-center font-bold border-2 cursor-pointer transition-colors',
+                                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-all',
                                   field.value === i
-                                    ? 'bg-primary text-primary-foreground border-primary'
-                                    : 'bg-muted/50 hover:bg-accent hover:border-accent-foreground'
+                                    ? 'border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                                    : 'border-border/70 bg-white/80 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground'
                                 )}
                               >
                                 {i}
@@ -210,8 +217,8 @@ export default function JudgingPanel({
                 )}
               />
             ))}
-            <Button type="submit" className="w-full text-lg py-6">
-              Guardar Calificación
+            <Button type="submit" disabled={form.formState.isSubmitting} className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/15">
+              {form.formState.isSubmitting ? <><LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> Guardando…</> : <><CheckCircle className="mr-2 h-4 w-4" /> Guardar calificación</>}
             </Button>
           </form>
         </Form>

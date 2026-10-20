@@ -19,38 +19,72 @@ import { useScoresStore } from '@/store/scores-store';
 import { useEffect, useMemo, useState } from 'react';
 import type { Participant } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const useHasScores = (judgeId: string | undefined, participantId: string) => {
-  const [hasScore, setHasScore] = useState(false);
+const photoHints = [
+  'folk dance', 'rock band', 'singer woman', 'magician stage',
+  'public speaking', 'live painting', 'stand up comedy', 'orchestra conductor',
+  'ballet dancers', 'dj mixing', 'gospel singer', 'acoustic guitar',
+  'modern dance', 'hip hop dance', 'traditional dance', 'dance crew',
+  'salsa dancing', 'flamenco dancer', 'group dance', 'contemporary dance'
+];
 
-  useEffect(() => {
-    if (!db || !judgeId) {
-      setHasScore(false);
-      return;
-    }
-    const firestore = db;
-    const checkScore = async () => {
-      if (!judgeId || !participantId) return;
-      const docRef = doc(firestore, 'scores', `${judgeId}:${participantId}`);
-      try {
-        const docSnap = await getDoc(docRef);
-        setHasScore(docSnap.exists());
-      } catch (error) {
-        console.warn('No se pudo comprobar si el jurado ya calificó:', error);
-        setHasScore(false);
-      }
-    };
-    checkScore();
-  }, [judgeId, participantId]);
-
-  return hasScore;
-};
+function ParticipantCard({ participant, index, isGraded }: { participant: Participant, index: number, isGraded: boolean }) {
+  return (
+    <Card className={cn(
+      "group flex flex-col overflow-hidden rounded-2xl border-white/80 bg-white/75 shadow-[0_8px_28px_-18px_rgba(20,35,70,0.25)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_18px_42px_-20px_rgba(20,35,70,0.3)]",
+      isGraded && "ring-1 ring-emerald-500/35"
+    )}>
+      <CardHeader className="relative p-0">
+        <div className="relative aspect-video">
+          <Image
+            src={participant.photoUrl}
+            alt={`Foto de ${participant.name}`}
+            width={600}
+            height={400}
+            className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.025]"
+            data-ai-hint={photoHints[index % photoHints.length]}
+          />
+          {isGraded && <div className="absolute right-3 top-3 z-10 rounded-full border border-white/70 bg-white/90 p-2 text-emerald-600 shadow-sm backdrop-blur"><CheckCircle2 className="h-4 w-4" /></div>}
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow p-6">
+        <CardTitle className="mb-2 text-xl font-semibold tracking-[-0.03em] text-foreground">{participant.name}</CardTitle>
+        <CardDescription className="leading-6">{participant.description}</CardDescription>
+      </CardContent>
+      <CardFooter className="p-6 pt-0">
+        <Button asChild className="h-11 w-full rounded-xl font-semibold shadow-sm transition-transform group-hover:translate-y-[-1px]">
+          <Link href={`/participants/${participant.id}`}>Evaluar presentación <ArrowRight className="ml-2 h-4 w-4" /></Link>
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
   const { currentUser, _hasHydrated } = useScoresStore();
+  const [gradedParticipantIds, setGradedParticipantIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    const judgeId = currentUser?.id;
+    if (!db || !judgeId) {
+      setGradedParticipantIds(new Set());
+      return;
+    }
+
+    let isMounted = true;
+    getDocs(query(collection(db, 'scores'), where('judgeId', '==', judgeId)))
+      .then((snapshot) => {
+        if (isMounted) {
+          setGradedParticipantIds(new Set(snapshot.docs.map((score) => score.data().participantId as string)));
+        }
+      })
+      .catch((error) => console.warn('No se pudieron cargar las calificaciones del jurado:', error));
+
+    return () => { isMounted = false; };
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (_hasHydrated && !currentUser) {
@@ -58,14 +92,6 @@ export default function Home() {
     }
   }, [currentUser, _hasHydrated, router]);
 
-  const photoHints = [
-    'folk dance', 'rock band', 'singer woman', 'magician stage',
-    'public speaking', 'live painting', 'stand up comedy', 'orchestra conductor',
-    'ballet dancers', 'dj mixing', 'gospel singer', 'acoustic guitar',
-    'modern dance', 'hip hop dance', 'traditional dance', 'dance crew',
-    'salsa dancing', 'flamenco dancer', 'group dance', 'contemporary dance'
-  ];
-  
   const filteredParticipants = useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'ADMIN') {
@@ -75,55 +101,11 @@ export default function Home() {
     return participants.filter(p => p.eventType === eventType);
   }, [currentUser]);
 
-  const ParticipantCard = ({ participant, index }: { participant: Participant, index: number }) => {
-    const isGraded = useHasScores(currentUser?.id, participant.id);
-    
-    return (
-      <Card
-        className={cn(
-          "flex flex-col overflow-hidden transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl bg-card/80 backdrop-blur-sm",
-          isGraded && "border-green-500 border-2"
-        )}
-      >
-        <CardHeader className="p-0 relative">
-          <div className="aspect-video relative">
-            <Image
-              src={participant.photoUrl}
-              alt={`Foto de ${participant.name}`}
-              width={600}
-              height={400}
-              className="object-cover object-top h-full w-full"
-              data-ai-hint={photoHints[index % photoHints.length]}
-            />
-             {isGraded && (
-              <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1.5 z-10 shadow-lg">
-                <CheckCircle2 className="h-5 w-5" />
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="flex-grow p-6">
-          <CardTitle className="text-2xl font-bold mb-2 text-primary">
-            {participant.name}
-          </CardTitle>
-          <CardDescription>{participant.description}</CardDescription>
-        </CardContent>
-        <CardFooter className="p-6 pt-0">
-          <Button asChild className="w-full">
-            <Link href={`/participants/${participant.id}`}>
-              Evaluar Presentación <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </CardFooter>
-      </Card>
-    );
-  }
-
   const renderCategoryTabs = (eventType: 'Canto' | 'Baile') => {
     const eventParticipants = filteredParticipants.filter((p) => p.eventType === eventType);
     const renderGrid = (list: Participant[]) => (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {list.map((p, i) => <ParticipantCard key={p.id} participant={p} index={i} />)}
+        {list.map((p, i) => <ParticipantCard key={p.id} participant={p} index={i} isGraded={gradedParticipantIds.has(p.id)} />)}
       </div>
     );
 
@@ -140,9 +122,9 @@ export default function Home() {
 
     return (
       <Tabs defaultValue="categoryA" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-10 bg-transparent border-2 border-primary p-1 rounded-lg">
-          <TabsTrigger value="categoryA" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md">Categoría A</TabsTrigger>
-          <TabsTrigger value="categoryB" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md">Categoría B</TabsTrigger>
+        <TabsList className="mx-auto mb-8 grid h-12 w-full max-w-md grid-cols-2 rounded-full border border-border/70 bg-white/60 p-1 shadow-sm">
+          <TabsTrigger value="categoryA" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm">Categoría A</TabsTrigger>
+          <TabsTrigger value="categoryB" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm">Categoría B</TabsTrigger>
         </TabsList>
         <TabsContent value="categoryA">
           {renderGrid(participantsA)}
@@ -163,21 +145,27 @@ export default function Home() {
   const defaultTab = canSeeCanto ? 'canto' : 'baile';
 
   return (
-    <div className="container mx-auto py-12 px-4">
-      <div className="text-center mb-12">
-        <h1 className="text-5xl md:text-6xl font-extrabold text-primary mb-3 tracking-tight">
-          Participantes de BAYCANJA 2026
+    <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+      <div className="mb-10 flex flex-col gap-5 border-b border-black/[0.06] pb-8 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Festival de talentos · 2026</p>
+        <h1 className="text-4xl font-semibold tracking-[-0.055em] text-foreground sm:text-5xl">
+          Participantes
         </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Conoce a los talentosos artistas y oradores que compiten este año.
+        <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
+          Conoce a quienes subirán al escenario este año.
         </p>
+        </div>
+        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border/70 bg-white/70 px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" /> 36 participantes
+        </div>
       </div>
       
       {currentUser.role === 'ADMIN' ? (
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-lg mx-auto mb-6">
-            <TabsTrigger value="canto"><Mic className="mr-2"/>Canto</TabsTrigger>
-            <TabsTrigger value="baile"><Clapperboard className="mr-2"/>Baile</TabsTrigger>
+          <TabsList className="mb-8 grid h-12 w-full max-w-sm grid-cols-2 rounded-full border border-border/70 bg-white/60 p-1 shadow-sm">
+            <TabsTrigger value="canto" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Mic className="mr-2 h-4 w-4"/>Canto</TabsTrigger>
+            <TabsTrigger value="baile" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm"><Clapperboard className="mr-2 h-4 w-4"/>Baile</TabsTrigger>
           </TabsList>
           <TabsContent value="canto">
             {renderCategoryTabs('Canto')}

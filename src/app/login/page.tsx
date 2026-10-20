@@ -17,8 +17,9 @@ import {
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { LogIn, Tv } from 'lucide-react';
+import { ArrowRight, LockKeyhole, Sparkles, Tv } from 'lucide-react';
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
     if (!auth || !db || !isFirebaseConfigured) {
@@ -33,6 +35,8 @@ export default function LoginPage() {
       return;
     }
 
+    setIsSubmitting(true);
+    setError('');
     try {
       const credential = await signInWithEmailAndPassword(auth, authEmailForUsername(username), password);
       const profile = await getDoc(doc(db, 'userRoles', credential.user.uid));
@@ -49,56 +53,94 @@ export default function LoginPage() {
       router.push('/judging');
     } catch {
       setError('Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-       <div className="absolute inset-0 -z-10 h-full w-full bg-white bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:6rem_4rem]"><div className="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_800px_at_100%_200px,rgba(231,72,72,0.1),transparent)]"></div></div>
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center space-y-4">
-          <CardTitle className="text-4xl font-extrabold tracking-tight text-primary">BAYCANJA</CardTitle>
-          <CardDescription className="text-lg">
-            Bienvenido. Por favor, inicie sesión.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="username">Usuario</Label>
-            <Input 
-              id="username" 
-              placeholder="Ingrese su usuario" 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
+    <div className="relative isolate min-h-[100svh] overflow-hidden px-5 py-8 sm:px-8 lg:px-12">
+      <div aria-hidden="true" className="pointer-events-none absolute -left-48 top-[-14rem] -z-10 h-[38rem] w-[38rem] rounded-full bg-blue-200/35 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-72 right-[-10rem] -z-10 h-[42rem] w-[42rem] rounded-full bg-orange-200/35 blur-3xl" />
+
+      <div className="mx-auto grid min-h-[calc(100svh-4rem)] max-w-6xl items-center gap-12 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
+        <section className="mx-auto w-full max-w-xl lg:mx-0">
+          <div className="mb-9 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/65 px-3.5 py-2 text-xs font-semibold tracking-[0.12em] text-primary shadow-sm backdrop-blur">
+            <Sparkles className="h-3.5 w-3.5" /> FESTIVAL DE TALENTOS · 2026
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
-            <Input 
-              id="password" 
-              type="password"
-              placeholder="Ingrese su contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-            />
+          <div className="mb-5 flex items-center gap-3">
+            <Logo className="h-11 w-11" />
+            <span className="text-sm font-bold tracking-[0.22em] text-muted-foreground">BAYCANJA</span>
           </div>
-          {error && <p className="text-sm font-medium text-destructive pt-1">{error}</p>}
-        </CardContent>
-        <CardFooter>
-          <Button onClick={handleLogin} disabled={!isFirebaseConfigured} className="w-full text-lg py-6">
-            <LogIn className="mr-2 h-5 w-5"/>
-            Iniciar Sesión
-          </Button>
-        </CardFooter>
-      </Card>
-      <div className="mt-6 text-center">
-        <Button asChild variant="link" className="text-base">
-          <Link href="/public-results">
-            <Tv className="mr-2 h-4 w-4" />
-            Ver Tabla de Resultados Pública
-          </Link>
-        </Button>
+          <h1 className="max-w-xl text-5xl font-semibold leading-[1.03] tracking-[-0.065em] text-foreground sm:text-6xl lg:text-[4.5rem]">
+            Una noche.<br />
+            <span className="text-primary">36 historias</span><br />
+            por descubrir.
+          </h1>
+          <p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground sm:text-xl">
+            El escenario está listo. Acompaña y celebra el talento de quienes hacen de BAYCANJA algo inolvidable.
+          </p>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <span className="rounded-full border border-white/80 bg-white/60 px-4 py-2 text-sm font-medium text-foreground/80 shadow-sm">25 voces</span>
+            <span className="rounded-full border border-white/80 bg-white/60 px-4 py-2 text-sm font-medium text-foreground/80 shadow-sm">11 grupos de baile</span>
+          </div>
+          <div className="mt-14 hidden items-center gap-3 text-sm text-muted-foreground lg:flex">
+            <span className="h-px w-10 bg-primary/40" />
+            Una experiencia para reconocer el talento local
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-md">
+          <Card className="overflow-hidden rounded-[1.75rem] border-white/80 bg-white/80 shadow-[0_24px_80px_-32px_rgba(25,43,80,0.28)] backdrop-blur-xl">
+            <CardHeader className="space-y-3 px-7 pb-5 pt-8 sm:px-9 sm:pt-10">
+              <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <LockKeyhole className="h-5 w-5" />
+              </div>
+              <CardTitle className="text-3xl font-semibold tracking-[-0.045em]">Bienvenido</CardTitle>
+              <CardDescription className="text-base leading-6">Inicia sesión para continuar al portal de evaluación.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5 px-7 sm:px-9">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium">Usuario</Label>
+                <Input
+                  id="username"
+                  autoComplete="username"
+                  placeholder="Tu usuario"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="h-12 rounded-xl border-border/80 bg-white/80 px-4"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Tu contraseña"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  className="h-12 rounded-xl border-border/80 bg-white/80 px-4"
+                />
+              </div>
+              {error && <p role="alert" className="rounded-xl bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">{error}</p>}
+            </CardContent>
+            <CardFooter className="flex-col gap-4 px-7 pb-8 pt-6 sm:px-9 sm:pb-10">
+              <Button onClick={handleLogin} disabled={!isFirebaseConfigured || isSubmitting} className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/15 transition-transform hover:-translate-y-0.5">
+                {isSubmitting ? 'Verificando acceso…' : <>Ingresar al portal <ArrowRight className="ml-1 h-4 w-4" /></>}
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">Acceso seguro para jurados y coordinación</p>
+            </CardFooter>
+          </Card>
+
+          <div className="mt-5 rounded-2xl border border-white/75 bg-white/55 px-5 py-4 text-center backdrop-blur">
+            <p className="mb-1 text-sm font-medium text-foreground">¿Solo vienes a disfrutar los resultados?</p>
+            <Button asChild variant="link" className="h-auto p-0 text-sm font-semibold text-primary">
+              <Link href="/public-results"><Tv className="mr-2 h-4 w-4" /> Ver tabla pública</Link>
+            </Button>
+          </div>
+        </section>
       </div>
     </div>
   );
