@@ -141,6 +141,7 @@ const ParticipantRow = ({ participant }: { participant: RankedParticipant }) => 
 export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }) {
   const { currentUser, _hasHydrated } = useScoresStore();
   const [allScores, setAllScores] = useState<FirestoreScoreDoc[]>([]);
+  const [scoresError, setScoresError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -155,6 +156,12 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const scoresData = querySnapshot.docs.map(doc => doc.data() as FirestoreScoreDoc);
       setAllScores(scoresData);
+      setScoresError(null);
+    }, (error) => {
+      console.warn('No se pudieron cargar las puntuaciones de Firebase:', error);
+      setScoresError(error.code === 'permission-denied'
+        ? 'Firebase rechazó la lectura de puntuaciones. Hay que habilitar la lectura de la colección “scores” en las reglas de Firestore.'
+        : 'No se pudieron cargar las puntuaciones. Comprueba la conexión con Firebase e inténtalo de nuevo.');
     });
 
     return () => unsubscribe();
@@ -365,6 +372,11 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
   return (
     <Card>
       <CardContent className="pt-6">
+       {scoresError && (
+        <div role="alert" className="mb-6 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {scoresError}
+        </div>
+       )}
        {showTabs ? (
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 max-w-lg mx-auto mb-6">
