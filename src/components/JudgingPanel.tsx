@@ -113,7 +113,8 @@ export default function JudgingPanel({
         description: `La calificación de ${currentUser.username} para ${participant.name} ha sido guardada en la base de datos.`,
         action: <CheckCircle className="text-green-500" />,
       });
-      router.push('/');
+      // Return to the participant list; the root route is the login screen.
+      router.push('/judging');
     } catch (error) {
       console.error('No se pudo guardar la calificación:', error);
       toast({

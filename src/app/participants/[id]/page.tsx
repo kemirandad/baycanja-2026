@@ -14,8 +14,9 @@ export function generateStaticParams() {
   return participants.map((p) => ({ id: p.id }));
 }
 
-export default function ParticipantPage({ params }: { params: { id:string } }) {
-  const participant = participants.find((p) => p.id === params.id);
+export default async function ParticipantPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const participant = participants.find((p) => p.id === id);
 
   if (!participant) {
     notFound();
@@ -35,7 +36,7 @@ export default function ParticipantPage({ params }: { params: { id:string } }) {
     'gospel singer',
     'acoustic guitar',
   ];
-  const participantIndex = participants.findIndex((p) => p.id === params.id);
+  const participantIndex = participants.findIndex((p) => p.id === id);
   const hint = photoHints[participantIndex % photoHints.length] || 'person';
 
   return (
