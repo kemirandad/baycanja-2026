@@ -5,7 +5,7 @@ export interface Participant {
   description: string;
   longDescription: string;
   photoUrl: string;
-  category: 'A' | 'B';
+  category?: 'A' | 'B';
   eventType: 'Canto' | 'Baile';
 }
 

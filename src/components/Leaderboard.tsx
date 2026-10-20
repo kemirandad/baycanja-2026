@@ -202,10 +202,9 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
   
     const cantoA = rankParticipants(averagedParticipants.filter(p => p.eventType === 'Canto' && p.category === 'A'));
     const cantoB = rankParticipants(averagedParticipants.filter(p => p.eventType === 'Canto' && p.category === 'B'));
-    const baileA = rankParticipants(averagedParticipants.filter(p => p.eventType === 'Baile' && p.category === 'A'));
-    const baileB = rankParticipants(averagedParticipants.filter(p => p.eventType === 'Baile' && p.category === 'B'));
+    const baile = rankParticipants(averagedParticipants.filter(p => p.eventType === 'Baile'));
   
-    return {cantoA, cantoB, baileA, baileB};
+    return {cantoA, cantoB, baile};
   }, [allScores]);
 
   const resetScoresForEvent = async (eventType: 'Canto' | 'Baile') => {
@@ -278,8 +277,40 @@ export default function Leaderboard({ isPublic = false }: { isPublic?: boolean }
   };
 
   const renderCategoryTabs = (eventType: 'Canto' | 'Baile') => {
-    const dataA = eventType === 'Canto' ? rankedParticipants.cantoA : rankedParticipants.baileA;
-    const dataB = eventType === 'Canto' ? rankedParticipants.cantoB : rankedParticipants.baileB;
+    if (eventType === 'Baile') {
+      return (
+        <div>
+          {renderLeaderboardTable(rankedParticipants.baile)}
+          {currentUser?.role === 'ADMIN' && !isPublic && (
+            <div className="mt-8 text-center">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reiniciar Puntuaciones de Baile
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción borrará permanentemente todas las puntuaciones para el evento de Baile. Esta acción no se puede deshacer.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => resetScoresForEvent('Baile')}>Continuar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const dataA = rankedParticipants.cantoA;
+    const dataB = rankedParticipants.cantoB;
 
     return (
       <Tabs defaultValue="categoryA" className="w-full">

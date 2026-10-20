@@ -114,9 +114,19 @@ export default function Home() {
   }
 
   const renderCategoryTabs = (eventType: 'Canto' | 'Baile') => {
+    const eventParticipants = filteredParticipants.filter((p) => p.eventType === eventType);
+    const renderGrid = (list: Participant[]) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {list.map((p, i) => <ParticipantCard key={p.id} participant={p} index={i} />)}
+      </div>
+    );
+
+    if (eventType === 'Baile') {
+      return eventParticipants.length ? renderGrid(eventParticipants) : null;
+    }
+
     const participantsA = filteredParticipants.filter((p) => p.eventType === eventType && p.category === 'A');
     const participantsB = filteredParticipants.filter((p) => p.eventType === eventType && p.category === 'B');
-    const baseIndex = eventType === 'Canto' ? 0 : 12;
 
     if (participantsA.length === 0 && participantsB.length === 0) {
       return null;
@@ -129,14 +139,10 @@ export default function Home() {
           <TabsTrigger value="categoryB" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md">Categoría B</TabsTrigger>
         </TabsList>
         <TabsContent value="categoryA">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {participantsA.map((p, i) => <ParticipantCard key={p.id} participant={p} index={baseIndex + i} />)}
-          </div>
+          {renderGrid(participantsA)}
         </TabsContent>
         <TabsContent value="categoryB">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {participantsB.map((p, i) => <ParticipantCard key={p.id} participant={p} index={baseIndex + 6 + i} />)}
-          </div>
+          {renderGrid(participantsB)}
         </TabsContent>
       </Tabs>
     );
@@ -154,7 +160,7 @@ export default function Home() {
     <div className="container mx-auto py-12 px-4">
       <div className="text-center mb-12">
         <h1 className="text-5xl md:text-6xl font-extrabold text-primary mb-3 tracking-tight">
-          Participantes de BAYCANJA
+          Participantes de BAYCANJA 2026
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Conoce a los talentosos artistas y oradores que compiten este año.
